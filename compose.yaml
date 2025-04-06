@@ -1,0 +1,13 @@
+services:
+  translation-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: translation-service:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./models:/app/models
+    environment:
+      API_KEY: ""
+    restart: unless-stopped

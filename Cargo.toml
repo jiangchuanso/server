@@ -1,0 +1,9 @@
+[workspace]
+resolver = "3"
+members = ["bergamot", "server"]
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
