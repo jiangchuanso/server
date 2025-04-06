@@ -7,14 +7,14 @@ main:
         - name: download models
           script: |
             mkdir -p models/enzh
-            wget https://github.com/mozilla/firefox-translations-models/raw/refs/heads/main/registry.json -O registry.json
+            curl -sL https://github.com/mozilla/firefox-translations-models/raw/refs/heads/main/registry.json > registry.json
             files=(model lex trgvocab srcvocab)
             for file_type in "${files[@]}"; do
               file_name=$(jq -r ".enzh.$file_type.name" registry.json)
               if [ -n "$file_name" ] && [ "$file_name" != "null" ]; then
                 echo "Downloading $file_name for enzh"
                 download_url="https://github.com/mozilla/firefox-translations-models/raw/refs/heads/main/models/prod/enzh/${file_name}.gz"
-                curl -L -s $download_url -o "models/enzh/${file_name}.gz"
+                curl -L -sL $download_url -o "models/enzh/${file_name}.gz"
                 gunzip -f "models/enzh/${file_name}.gz"
                 echo "$file_name downloaded and extracted to models/enzh/$file_name"
               else
