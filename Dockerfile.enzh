@@ -1,0 +1,14 @@
+FROM ghcr.io/aalivexy/translation-service:main
+
+COPY models /app/models
+
+ENV MODELS_DIR=/app/models
+ENV NUM_WORKERS=1
+ENV IP=0.0.0.0
+ENV PORT=3000
+# ENV ENV_API_KEY=
+ENV RUST_LOG=info
+
+EXPOSE 3000
+
+ENTRYPOINT ["/app/server"]

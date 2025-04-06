@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "https://docs.cnb.cool/conf-schema-zh.json": ".cnb.yml"
+    }
+}
