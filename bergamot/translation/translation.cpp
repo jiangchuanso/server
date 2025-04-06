@@ -28,7 +28,6 @@ extern "C" TranslatorWrapper *bergamot_create(size_t numWorkers)
     try
     {
         TranslatorWrapper *ptr = new TranslatorWrapper(numWorkers);
-        std::cerr << "ptr: " << ptr << std::endl;
         return ptr;
     }
     catch (const std::exception &e)
@@ -104,13 +103,11 @@ extern "C" bool bergamot_is_supported(TranslatorWrapper *translator, const char 
 
 extern "C" const char *bergamot_translate(TranslatorWrapper *translator, const char *from, const char *to, const char *input)
 {
-    std::cerr << "Starting translation..." << std::endl;
     if (!translator || !from || !to || !input)
     {
         std::cerr << "Error: Invalid parameters for translation" << std::endl;
         return nullptr;
     }
-    std::cerr << "Translator: " << translator << ", From: " << from << ", To: " << to << ", Input: " << input << std::endl;
 
     char *c_result = nullptr;
     try
@@ -184,26 +181,24 @@ static std::string translateInternal(TranslatorWrapper *translator,
     }
 
     auto model = modelIt->second;
-    std::cerr << model.get()->modelId() << std::endl;
     ResponseOptions responseOptions;
     std::promise<Response> responsePromise;
     std::future<Response> responseFuture = responsePromise.get_future();
 
-    auto callback = [&responsePromise](Response &&response) {
+    auto callback = [&responsePromise](Response &&response)
+    {
         responsePromise.set_value(std::move(response));
     };
 
     try
     {
         translator->service.translate(model, std::string(input), std::move(callback), responseOptions);
-        if (!responseFuture.valid()) {
+        if (!responseFuture.valid())
+        {
             std::cerr << "Error: responseFuture is invalid!" << std::endl;
             return "";
         }
-        std::cerr << "Waiting for translation result..." << std::endl;
-        // TODO: 这里会直接退出
         auto status = responseFuture.wait_for(std::chrono::seconds(30));
-        std::cerr << "Translation result status: " << (status == std::future_status::ready ? "Ready" : "Not Ready") << std::endl;
         if (status != std::future_status::ready)
         {
             throw std::runtime_error("Translation timeout");
