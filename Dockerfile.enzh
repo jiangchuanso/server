@@ -1,6 +1,6 @@
 FROM ghcr.io/aalivexy/translation-service:main
 
-COPY models /app/models
+COPY ./models /app/models
 
 ENV MODELS_DIR=/app/models
 ENV NUM_WORKERS=1
