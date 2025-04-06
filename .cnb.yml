@@ -6,7 +6,7 @@ main:
       stages:
         - name: download models
           script: |
-            mkdir -p models/enzh
+            mkdir -p models-enzh/enzh
             curl -sL https://github.com/mozilla/firefox-translations-models/raw/refs/heads/main/registry.json > registry.json
             files=(model lex trgvocab srcvocab)
             for file_type in "${files[@]}"; do
@@ -14,15 +14,16 @@ main:
               if [ -n "$file_name" ] && [ "$file_name" != "null" ]; then
                 echo "Downloading $file_name for enzh"
                 download_url="https://github.com/mozilla/firefox-translations-models/raw/refs/heads/main/models/prod/enzh/${file_name}.gz"
-                curl -L -sL $download_url -o "models/enzh/${file_name}.gz"
-                gunzip -f "models/enzh/${file_name}.gz"
-                echo "$file_name downloaded and extracted to models/enzh/$file_name"
+                curl -L -sL $download_url -o "models-enzh/enzh/${file_name}.gz"
+                gunzip -f "models-enzh/enzh/${file_name}.gz"
+                echo "$file_name downloaded and extracted to models-enzh/enzh/$file_name"
               else
                 echo "Failed to find $file_type for enzh in registry.json"
               fi
             done
             echo "Download completed. Model structure:"
-            ls -R models
+            pwd
+            ls -R models-enzh
         - name: docker login
           script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
         - name: docker build
