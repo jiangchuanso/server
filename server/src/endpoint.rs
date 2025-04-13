@@ -22,7 +22,7 @@ pub async fn translate(
     Json(request): Json<TranslationRequest>,
 ) -> Result<Json<TranslationResponse>, AppError> {
     let (text, from_lang, to_lang) =
-        perform_translation(&state.translator, &request.text, request.from, &request.to).await?;
+        perform_translation(&state, &request.text, request.from, &request.to).await?;
 
     Ok(Json(TranslationResponse {
         text,
@@ -50,7 +50,7 @@ pub async fn translate_kiss(
     Json(request): Json<KissTranslationRequest>,
 ) -> Result<Json<KissTranslationResponse>, AppError> {
     let (text, from_lang, to_lang) =
-        perform_translation(&state.translator, &request.text, request.from, &request.to).await?;
+        perform_translation(&state, &request.text, request.from, &request.to).await?;
 
     Ok(Json(KissTranslationResponse {
         text,
@@ -85,7 +85,7 @@ pub async fn translate_immersive(
 
     for text in request.text_list {
         let (translated_text, from_lang, _) = perform_translation(
-            &state.translator,
+            &state,
             &text,
             request.source_lang.clone(),
             &request.target_lang,
@@ -131,13 +131,7 @@ pub async fn translate_hcfy(
             .iter()
             .find(|&&(name, _)| name == lang)
             .map(|&(_, code)| code)
-            .unwrap_or_else(|| {
-                if ["zh", "en", "jp"].contains(&lang) {
-                    lang
-                } else {
-                    lang
-                }
-            })
+            .unwrap_or_else(|| lang)
             .to_string()
     }
 
@@ -153,7 +147,7 @@ pub async fn translate_hcfy(
     let source_lang = request.source.as_deref().map(convert_language_name);
 
     let target_lang = match (
-        request.destination.get(0),
+        request.destination.first(),
         source_lang.as_deref(),
         request.destination.get(1),
     ) {
@@ -165,7 +159,7 @@ pub async fn translate_hcfy(
     };
 
     let (translated_text, detected_source, _) =
-        perform_translation(&state.translator, &request.text, source_lang, &target_lang).await?;
+        perform_translation(&state, &request.text, source_lang, &target_lang).await?;
 
     Ok(Json(HcfyTranslationResponse {
         text: request.text,
