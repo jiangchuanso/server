@@ -1,34 +1,6 @@
-use crate::{AppError, AppState, TranslationModel};
+use crate::{AppError, AppState};
 use isolang::Language;
-use std::{collections::HashSet, sync::Arc};
-
-fn language_detect(text: &str, models: &Vec<TranslationModel>) -> Result<Language, AppError> {
-    let allow_list: HashSet<whatlang::Lang> = models
-        .iter()
-        .flat_map(|model| {
-            [&model.from_lang, &model.to_lang]
-                .into_iter()
-                .filter_map(|lang| lang.to_639_1())
-                .filter_map(|code| whatlang::Lang::from_code(code))
-        })
-        .collect();
-
-    whatlang::Detector::with_allowlist(allow_list.into_iter().collect())
-        .detect_lang(text)
-        .ok_or_else(|| {
-            AppError::TranslationError(
-                "Language detection failed: text may be too short or ambiguous".to_string(),
-            )
-        })
-        .and_then(|info| {
-            Language::from_639_3(info.code()).ok_or_else(|| {
-                AppError::TranslationError(format!(
-                    "Failed to convert ISO-639-3 code '{}' to language",
-                    info.code()
-                ))
-            })
-        })
-}
+use std::sync::Arc;
 
 fn parse_language_code(code: &str) -> Result<Language, AppError> {
     Language::from_639_1(code).ok_or_else(|| {
@@ -55,7 +27,12 @@ pub async fn perform_translation(
     to_lang: &str,
 ) -> Result<(String, String, String), AppError> {
     let source_lang = match from_lang.as_deref() {
-        None | Some("") | Some("auto") => language_detect(text, &state.available_models)?,
+        None | Some("") | Some("auto") => Language::from_639_3(
+            whichlang::detect_language(text).three_letter_code(),
+        )
+        .ok_or_else(|| {
+            AppError::TranslationError(format!("Failed to detect language for text: '{}'", text))
+        })?,
         Some(code) => parse_language_code(code)?,
     };
 

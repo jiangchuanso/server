@@ -86,7 +86,6 @@ impl TranslationModel {
 
 struct AppState {
     translator: Translator,
-    available_models: Vec<TranslationModel>,
 }
 
 async fn auth_middleware(
@@ -291,10 +290,7 @@ async fn main() -> anyhow::Result<()> {
             .collect::<Vec<_>>()
     );
 
-    let app_state = Arc::new(AppState {
-        translator,
-        available_models,
-    });
+    let app_state = Arc::new(AppState { translator });
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
