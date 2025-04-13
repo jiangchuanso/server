@@ -1,14 +1,13 @@
 use anyhow::Context;
 use axum::{
     Router,
-    extract::{Json, State},
+    extract::Json,
     http::{HeaderMap, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::post,
 };
 use bergamot::Translator;
-use serde::{Deserialize, Serialize};
 use std::{fs, io, net::SocketAddr, path::PathBuf, sync::Arc};
 use tokio::net::TcpListener;
 use tower_http::{
@@ -17,26 +16,15 @@ use tower_http::{
 };
 use tracing::{debug, error, info};
 
+mod endpoint;
+mod translation;
+
 const ENV_MODELS_PATH: &str = "MODELS_DIR";
 const ENV_NUM_WORKERS: &str = "NUM_WORKERS";
 const ENV_SERVER_IP: &str = "IP";
 const ENV_SERVER_PORT: &str = "PORT";
 const ENV_API_KEY: &str = "API_KEY";
 const ENV_LOG_LEVEL: &str = "RUST_LOG";
-
-#[derive(Debug, Deserialize)]
-struct TranslationRequest {
-    text: String,
-    from: Option<String>,
-    to: String,
-}
-
-#[derive(Debug, Serialize)]
-struct TranslationResponse {
-    text: String,
-    from: String,
-    to: String,
-}
 
 #[derive(Debug, thiserror::Error)]
 enum AppError {
@@ -85,60 +73,28 @@ async fn auth_middleware(
     let expected_key = std::env::var(ENV_API_KEY).unwrap_or_default();
 
     if !expected_key.is_empty() {
-        if let Some(key) = headers
+        let header_key = headers
             .get("Authorization")
             .and_then(|header| header.to_str().ok())
-            .and_then(|auth| auth.strip_prefix("Bearer "))
-        {
-            if key != expected_key {
-                debug!("Invalid API key");
-                return Err(AppError::Unauthorized);
-            }
+            .and_then(|auth| auth.strip_prefix("Bearer "));
+
+        let query_key = request.uri().query().and_then(|query| {
+            query.split('&').find_map(|pair| {
+                let mut parts = pair.split('=');
+                if let Some("token") = parts.next() {
+                    parts.next()
+                } else {
+                    None
+                }
+            })
+        });
+
+        if header_key != Some(&expected_key) && query_key != Some(&expected_key) {
+            debug!("Invalid API key");
+            return Err(AppError::Unauthorized);
         }
     }
     Ok(next.run(request).await)
-}
-
-fn check_language_support(
-    translator: &Translator,
-    from_lang: &str,
-    to_lang: &str,
-) -> Result<(String, String, bool), AppError> {
-    if translator.is_supported(from_lang, to_lang)? {
-        return Ok((from_lang.to_string(), to_lang.to_string(), true));
-    }
-
-    let base_from_lang = from_lang.split('-').next().unwrap_or(from_lang).to_string();
-
-    let base_to_lang = to_lang.split('-').next().unwrap_or(to_lang).to_string();
-
-    if !translator.is_supported(&base_from_lang, &base_to_lang)? {
-        return Err(AppError::TranslationError(format!(
-            "Translation from '{}' to '{}' is not supported (tried both with and without language variants)",
-            from_lang, to_lang
-        )));
-    }
-
-    Ok((base_from_lang, base_to_lang, false))
-}
-
-async fn translate(
-    State(state): State<Arc<AppState>>,
-    Json(request): Json<TranslationRequest>,
-) -> Result<Json<TranslationResponse>, AppError> {
-    let from_lang = request.from.unwrap_or_else(|| "en".to_string());
-    let (from_lang, to_lang, _) =
-        check_language_support(&state.translator, &from_lang, &request.to)?;
-
-    let translated_text = state
-        .translator
-        .translate(&from_lang, &to_lang, &request.text)?;
-
-    Ok(Json(TranslationResponse {
-        text: translated_text,
-        from: from_lang,
-        to: to_lang,
-    }))
 }
 
 fn build_config(
@@ -292,7 +248,10 @@ async fn main() -> anyhow::Result<()> {
         .allow_headers(Any);
 
     let app = Router::new()
-        .route("/translate", post(translate))
+        .route("/translate", post(endpoint::translate))
+        .route("/kiss", post(endpoint::translate_kiss))
+        .route("/imme", post(endpoint::translate_immersive))
+        .route("/hcfy", post(endpoint::translate_hcfy))
         .route_layer(middleware::from_fn(auth_middleware))
         .layer(TraceLayer::new_for_http())
         .layer(cors)
