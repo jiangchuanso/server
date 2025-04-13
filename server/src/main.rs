@@ -8,6 +8,7 @@ use axum::{
     routing::{get, post},
 };
 use bergamot::Translator;
+use isolang::Language;
 use std::{fs, io, net::SocketAddr, path::PathBuf, sync::Arc};
 use tokio::net::TcpListener;
 use tower_http::{
@@ -63,6 +64,7 @@ impl IntoResponse for AppError {
 
 struct AppState {
     translator: Translator,
+    models: Vec<(Language, Language)>,
 }
 
 async fn auth_middleware(
@@ -130,7 +132,12 @@ struct ModelFiles {
     shortlist_path: String,
 }
 
-fn load_models_manually(translator: &Translator, models_dir: &PathBuf) -> Result<(), AppError> {
+fn load_models_manually(
+    translator: &Translator,
+    models_dir: &PathBuf,
+) -> Result<Vec<(Language, Language)>, AppError> {
+    let mut models = Vec::new();
+
     for entry in fs::read_dir(models_dir)? {
         let entry = entry?;
         let model_dir_path = entry.path();
@@ -158,10 +165,22 @@ fn load_models_manually(translator: &Translator, models_dir: &PathBuf) -> Result
             &files.shortlist_path,
         );
         translator.load_model_from_config(&language_pair, &config)?;
+
+        if language_pair.len() >= 4 {
+            let from_lang = translation::parse_language_code(&language_pair[0..2])?;
+            let to_lang = translation::parse_language_code(&language_pair[2..4])?;
+            models.push((from_lang, to_lang));
+        } else {
+            return Err(AppError::ConfigError(format!(
+                "Invalid language pair format: '{}'. Expected format like 'enzh', 'jpen'",
+                language_pair
+            )));
+        }
+
         info!("Loaded model for language pair '{}'", language_pair);
     }
 
-    Ok(())
+    Ok(models)
 }
 
 fn collect_model_files(base_path: &PathBuf) -> Result<ModelFiles, AppError> {
@@ -240,9 +259,10 @@ async fn main() -> anyhow::Result<()> {
     let translator = Translator::new(num_workers).context("Failed to initialize translator")?;
 
     info!("Loading translation models from {}", models_dir.display());
-    load_models_manually(&translator, &models_dir).context("Failed to load translation models")?;
+    let models = load_models_manually(&translator, &models_dir)
+        .context("Failed to load translation models")?;
 
-    let app_state = Arc::new(AppState { translator });
+    let app_state = Arc::new(AppState { translator, models });
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

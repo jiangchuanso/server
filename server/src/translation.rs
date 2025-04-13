@@ -2,7 +2,7 @@ use crate::{AppError, AppState};
 use isolang::Language;
 use std::sync::Arc;
 
-fn parse_language_code(code: &str) -> Result<Language, AppError> {
+pub fn parse_language_code(code: &str) -> Result<Language, AppError> {
     Language::from_639_1(code.split('-').next().unwrap_or(code)).ok_or_else(|| {
         AppError::TranslationError(format!(
             "Invalid language code: '{}'. Please use ISO 639-1 format.",
@@ -40,12 +40,24 @@ pub async fn perform_translation(
     to_lang: &str,
 ) -> Result<(String, String, String), AppError> {
     let source_lang = match from_lang.as_deref() {
-        None | Some("") | Some("auto") => Language::from_639_3(
-            whichlang::detect_language(text).three_letter_code(),
-        )
-        .ok_or_else(|| {
-            AppError::TranslationError(format!("Failed to detect language for text: '{}'", text))
-        })?,
+        None | Some("") | Some("auto") => {
+            if state.models.len() == 1 {
+                // If there's only one model, use it as the source language
+                state
+                    .models
+                    .first()
+                    .map(|model| model.0)
+                    .unwrap_or(Language::Eng)
+            } else {
+                Language::from_639_3(whichlang::detect_language(text).three_letter_code())
+                    .ok_or_else(|| {
+                        AppError::TranslationError(format!(
+                            "Failed to detect language for text: '{}'",
+                            text
+                        ))
+                    })?
+            }
+        }
         Some(code) => parse_language_code(code)?,
     };
 
