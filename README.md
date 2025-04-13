@@ -76,6 +76,11 @@ services:
     environment:
       API_KEY: "your_api_key"  # Optional, leave empty to disable API key protection
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "echo -e 'GET /health HTTP/1.1\r\nHost: localhost:3000\r\n\r\n' | timeout 5 bash -c 'cat > /dev/tcp/localhost/3000' && echo 'Health check passed'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 ```
 
 Start the service:
@@ -113,24 +118,24 @@ ENTRYPOINT ["/app/server"]
 
 ```
 models/
-├── en-zh/  # Language pair directory name format: "source language code-target language code"
+├── enzh/  # Language pair directory name format: "[source language code][target language code]"
 │   ├── model.intgemm8.bin  # Translation model
 │   ├── model.s2t.bin       # Shortlist file
 │   ├── srcvocab.spm        # Source language vocabulary
 │   └── trgvocab.spm        # Target language vocabulary
-└── zh-en/  # Another language pair
+└── zhen/  # Another language pair
     └── ...
 ```
 
 ### Language Pair Support
 
-The translation service will automatically scan all language pair directories under the `models` directory and load them. Directory names should follow the `source language-target language` format using [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) language codes.
+The translation service will automatically scan all language pair directories under the `models` directory and load them. Directory names should follow the `[source language][target language]` format using [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) language codes.
 
 ## Environment Variables
 
 | Variable Name | Description | Default Value |
 |---------------|-------------|---------------|
-| `MODELS_DIR`  | Path to models directory | `./models` |
+| `MODELS_DIR`  | Path to models directory | `/app/models` |
 | `NUM_WORKERS` | Number of translation worker threads | `1` |
 | `IP`          | IP address for the service to listen on | `127.0.0.1` |
 | `PORT`        | Port for the service to listen on | `3000` |

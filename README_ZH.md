@@ -38,7 +38,17 @@
 
 Docker 是本服务**唯一推荐**的部署方式。
 
-### 方式一：使用预构建镜像（不含翻译模型）
+### 方式一：使用自带英译中模型的镜像（国内托管，推荐，速度快）
+
+```bash
+docker run -d --name translation-service \
+  -p 3000:3000 \
+  docker.cnb.cool/aalivexy/translation-service:latest
+```
+
+> 注意：自带英译中模型的镜像大小约 50MiB，启动后单 worker 大约占用内存 300MiB+，且翻译延迟较低。
+
+### 方式二：使用预构建镜像（不含翻译模型）
 
 ```bash
 # 创建模型目录
@@ -51,16 +61,6 @@ docker run -d --name translation-service \
   ghcr.io/aalivexy/translation-service:main
 ```
 
-### 方式二：使用自带英译中模型的镜像（国内托管，推荐，速度快）
-
-```bash
-docker run -d --name translation-service \
-  -p 3000:3000 \
-  docker.cnb.cool/aalivexy/translation-service:latest
-```
-
-> 注意：自带英译中模型的镜像大小约 50MiB，启动后单 worker 大约占用内存 300MiB+，且翻译延迟较低。
-
 ### Docker Compose 部署
 
 创建 `compose.yaml` 文件：
@@ -68,14 +68,17 @@ docker run -d --name translation-service \
 ```yaml
 services:
   translation-service:
-    image: ghcr.io/aalivexy/translation-service:main
+    image: docker.cnb.cool/aalivexy/translation-service:latest
     ports:
       - "3000:3000"
-    volumes:
-      - ./models:/app/models
     environment:
-      API_KEY: "your_api_key"  # 可选，设置为空字符串则不启用 API 密钥保护
+      API_KEY: "" # 可选，设置为空字符串则不启用 API 密钥保护
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "echo -e 'GET /health HTTP/1.1\r\nHost: localhost:3000\r\n\r\n' | timeout 5 bash -c 'cat > /dev/tcp/localhost/3000' && echo 'Health check passed'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 ```
 
 启动服务：
@@ -113,18 +116,18 @@ ENTRYPOINT ["/app/server"]
 
 ```
 models/
-├── en-zh/  # 语言对目录名格式为 "源语言代码-目标语言代码"
+├── enzh/  # 语言对目录名格式为 "[源语言代码][目标语言代码]"
 │   ├── model.intgemm8.bin  # 翻译模型
 │   ├── model.s2t.bin       # shortlist 文件
 │   ├── srcvocab.spm        # 源语言词表
 │   └── trgvocab.spm        # 目标语言词表
-└── zh-en/  # 另一个语言对
+└── zhen/  # 另一个语言对
     └── ...
 ```
 
 ### 语言对支持
 
-翻译服务会自动扫描 `models` 目录下的所有语言对目录，并加载它们。目录名应遵循 `源语言-目标语言` 的格式，使用 [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) 语言代码。
+翻译服务会自动扫描 `models` 目录下的所有语言对目录，并加载它们。目录名应遵循 `[源语言][目标语言]` 的格式，使用 [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) 语言代码。
 
 ## 环境变量
 
