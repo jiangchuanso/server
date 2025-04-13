@@ -15,6 +15,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     # Some versions of GCC will cause uninitialized errors during optimization
     add_compile_options(-Wno-error=maybe-uninitialized)
     add_compile_options(-Wno-error=uninitialized)
+    add_compile_options(-Wno-maybe-uninitialized)
 endif()
 
 set(BERGAMOT_SUBMODULE_PATH "$ENV{BERGAMOT_SUBMODULE_PATH}")
