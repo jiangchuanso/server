@@ -5,10 +5,9 @@ use axum::{
     http::{HeaderMap, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
-    routing::post,
+    routing::{get, post},
 };
 use bergamot::Translator;
-use isolang::Language;
 use std::{fs, io, net::SocketAddr, path::PathBuf, sync::Arc};
 use tokio::net::TcpListener;
 use tower_http::{
@@ -59,28 +58,6 @@ impl IntoResponse for AppError {
         };
 
         (status, Json(serde_json::json!({ "error": message }))).into_response()
-    }
-}
-
-#[derive(Debug, Clone)]
-struct TranslationModel {
-    from_lang: Language,
-    to_lang: Language,
-}
-
-impl TranslationModel {
-    fn new(model_id: &str) -> Option<Self> {
-        if model_id.len() == 4 {
-            let from_code = &model_id[0..2];
-            let to_code = &model_id[2..4];
-
-            Some(Self {
-                from_lang: Language::from_639_1(from_code)?,
-                to_lang: Language::from_639_1(to_code)?,
-            })
-        } else {
-            None
-        }
     }
 }
 
@@ -153,29 +130,13 @@ struct ModelFiles {
     shortlist_path: String,
 }
 
-fn load_models_manually(
-    translator: &Translator,
-    models_dir: &PathBuf,
-) -> Result<Vec<TranslationModel>, AppError> {
-    let mut loaded_models = Vec::new();
-
+fn load_models_manually(translator: &Translator, models_dir: &PathBuf) -> Result<(), AppError> {
     for entry in fs::read_dir(models_dir)? {
         let entry = entry?;
         let model_dir_path = entry.path();
         let language_pair = entry.file_name().to_string_lossy().into_owned();
 
         info!("Looking for models in {}", model_dir_path.display());
-
-        let translation_model = match TranslationModel::new(&language_pair) {
-            Some(model) => model,
-            None => {
-                error!(
-                    "Invalid model name format: {}, expected format like 'enzh', 'jpen'",
-                    language_pair
-                );
-                continue;
-            }
-        };
 
         let files = collect_model_files(&model_dir_path)?;
 
@@ -197,10 +158,10 @@ fn load_models_manually(
             &files.shortlist_path,
         );
         translator.load_model_from_config(&language_pair, &config)?;
-        loaded_models.push(translation_model);
+        info!("Loaded model for language pair '{}'", language_pair);
     }
 
-    Ok(loaded_models)
+    Ok(())
 }
 
 fn collect_model_files(base_path: &PathBuf) -> Result<ModelFiles, AppError> {
@@ -279,16 +240,7 @@ async fn main() -> anyhow::Result<()> {
     let translator = Translator::new(num_workers).context("Failed to initialize translator")?;
 
     info!("Loading translation models from {}", models_dir.display());
-    let available_models = load_models_manually(&translator, &models_dir)
-        .context("Failed to load translation models")?;
-
-    info!(
-        "Loaded models: {:?}",
-        available_models
-            .iter()
-            .map(|model| format!("{}-{}", model.from_lang, model.to_lang))
-            .collect::<Vec<_>>()
-    );
+    load_models_manually(&translator, &models_dir).context("Failed to load translation models")?;
 
     let app_state = Arc::new(AppState { translator });
 
@@ -302,6 +254,15 @@ async fn main() -> anyhow::Result<()> {
         .route("/kiss", post(endpoint::translate_kiss))
         .route("/imme", post(endpoint::translate_immersive))
         .route("/hcfy", post(endpoint::translate_hcfy))
+        .route("/detect", post(endpoint::detect_language))
+        .route(
+            "/health",
+            get(async || {
+                Json(serde_json::json!({
+                    "status": "ok",
+                }))
+            }),
+        )
         .route_layer(middleware::from_fn(auth_middleware))
         .layer(TraceLayer::new_for_http())
         .layer(cors)

@@ -1,7 +1,28 @@
-use crate::{AppError, AppState, translation::perform_translation};
+use crate::{
+    AppError, AppState,
+    translation::{detect_language_code, perform_translation},
+};
 use axum::{Json, extract::State};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
+#[derive(Debug, Deserialize)]
+pub struct DetectLanguageRequest {
+    text: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DetectLanguageResponse {
+    language: String,
+}
+
+pub async fn detect_language(
+    Json(request): Json<DetectLanguageRequest>,
+) -> Result<Json<DetectLanguageResponse>, AppError> {
+    Ok(Json(DetectLanguageResponse {
+        language: detect_language_code(&request.text)?.to_owned(),
+    }))
+}
 
 #[derive(Debug, Deserialize)]
 pub struct TranslationRequest {

@@ -20,6 +20,19 @@ fn get_iso_code(lang: &Language) -> Result<&'static str, AppError> {
     })
 }
 
+pub fn detect_language_code(text: &str) -> Result<&'static str, AppError> {
+    get_iso_code(
+        &Language::from_639_3(whichlang::detect_language(text).three_letter_code()).ok_or_else(
+            || {
+                AppError::TranslationError(format!(
+                    "Failed to identify language for text: '{}'",
+                    text
+                ))
+            },
+        )?,
+    )
+}
+
 pub async fn perform_translation(
     state: &Arc<AppState>,
     text: &str,
