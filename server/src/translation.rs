@@ -3,7 +3,7 @@ use isolang::Language;
 use std::sync::Arc;
 
 fn parse_language_code(code: &str) -> Result<Language, AppError> {
-    Language::from_639_1(code).ok_or_else(|| {
+    Language::from_639_1(code.split('-').next().unwrap_or(code)).ok_or_else(|| {
         AppError::TranslationError(format!(
             "Invalid language code: '{}'. Please use ISO 639-1 format.",
             code
