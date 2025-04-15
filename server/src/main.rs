@@ -274,6 +274,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/kiss", post(endpoint::translate_kiss))
         .route("/imme", post(endpoint::translate_immersive))
         .route("/hcfy", post(endpoint::translate_hcfy))
+        .route("/deeplx", post(endpoint::translate_deeplx))
         .route("/detect", post(endpoint::detect_language))
         .route(
             "/health",

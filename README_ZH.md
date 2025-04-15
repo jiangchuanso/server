@@ -24,6 +24,7 @@
   - [沉浸式翻译 (Immersive Translate)](https://immersivetranslate.com/) API
   - [简约翻译 (Kiss Translator)](https://www.kis-translator.com/) API
   - [划词翻译 (HCFY)](https://hcfy.app/) API
+  - [DeepLX](https://github.com/OwO-Network/DeepLX) API
 - 🔑 支持 API 密钥保护
 - 🐳 提供 Docker 镜像，便于部署
 
@@ -267,6 +268,30 @@ POST /hcfy
   "from": "英语",
   "to": "中文(简体)",
   "result": ["你好世界"]
+}
+```
+
+#### DeepLX API
+
+```
+POST /translate
+```
+
+请求体：
+```json
+{
+  "text": "Hello world",
+  "source_lang": "EN",  // 可选，省略则自动检测
+  "target_lang": "ZH"
+}
+```
+
+响应：
+```json
+{
+  "code": 200,
+  "data": "你好世界",
+  "alternatives": []
 }
 ```
 

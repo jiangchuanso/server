@@ -4,7 +4,7 @@ use crate::{
 };
 use axum::{Json, extract::State};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{sync::Arc, time::SystemTime};
 
 #[derive(Debug, Deserialize)]
 pub struct DetectLanguageRequest {
@@ -144,9 +144,6 @@ pub async fn translate_hcfy(
     const LANGUAGE_CODE_MAP: &[(&str, &str)] =
         &[("中文(简体)", "zh"), ("英语", "en"), ("日语", "jp")];
 
-    const LANGUAGE_NAME_MAP: &[(&str, &str)] =
-        &[("zh", "中文(简体)"), ("en", "英语"), ("jp", "日语")];
-
     fn convert_language_name(lang: &str) -> String {
         LANGUAGE_CODE_MAP
             .iter()
@@ -157,10 +154,10 @@ pub async fn translate_hcfy(
     }
 
     fn get_language_name(code: &str) -> String {
-        LANGUAGE_NAME_MAP
+        LANGUAGE_CODE_MAP
             .iter()
-            .find(|&&(c, _)| c == code)
-            .map(|&(_, name)| name)
+            .find(|&&(_, c)| c == code)
+            .map(|&(name, _)| name)
             .unwrap_or(code)
             .to_string()
     }
@@ -187,5 +184,49 @@ pub async fn translate_hcfy(
         from: get_language_name(&detected_source),
         to: get_language_name(&target_lang),
         result: vec![translated_text],
+    }))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DeeplxTranslationRequest {
+    text: String,
+    source_lang: String,
+    target_lang: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DeeplxTranslationResponse {
+    code: u32,
+    id: u128,
+    data: String,
+    alternatives: Vec<String>,
+    source_lang: String,
+    target_lang: String,
+    method: String,
+}
+
+pub async fn translate_deeplx(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<DeeplxTranslationRequest>,
+) -> Result<Json<DeeplxTranslationResponse>, AppError> {
+    let (text, from_lang, to_lang) = perform_translation(
+        &state,
+        &request.text,
+        Some(request.source_lang.to_lowercase()),
+        &request.target_lang.to_lowercase(),
+    )
+    .await?;
+
+    Ok(Json(DeeplxTranslationResponse {
+        code: 200,
+        id: SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis(),
+        data: text,
+        alternatives: vec![],
+        source_lang: from_lang.to_uppercase(),
+        target_lang: to_lang.to_uppercase(),
+        method: "Free".to_owned(),
     }))
 }

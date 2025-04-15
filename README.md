@@ -24,6 +24,7 @@ While searching for similar projects, I found Mozilla's [translation-service](ht
   - [Immersive Translate](https://immersivetranslate.com/) API
   - [Kiss Translator](https://www.kis-translator.com/) API
   - [HCFY](https://hcfy.app/) API
+  - [DeepLX](https://github.com/OwO-Network/DeepLX) API
 - 🔑 API key protection support
 - 🐳 Docker deployment ready
 
@@ -269,6 +270,33 @@ Response:
   "from": "英语",
   "to": "中文(简体)",
   "result": ["你好世界"]
+}
+```
+
+#### DeepLX API
+
+```
+POST /translate
+```
+
+Request body:
+```json
+{
+  "text": "Hello world",
+  "source_lang": "EN",
+  "target_lang": "ZH"
+}
+```
+
+Response:
+```json
+{
+  "code": 200,
+  "id": 1744646400,
+  "data": "你好世界",
+  "alternatives": [],
+  "source_lang": "EN",
+  "target_lang": "ZH"
 }
 ```
 
