@@ -47,7 +47,7 @@ docker run -d --name translation-service \
   docker.cnb.cool/aalivexy/translation-service:latest
 ```
 
-> 注意：自带英译中模型的镜像大小约 50MiB，启动后单 worker 大约占用内存 300MiB+，且翻译延迟较低。
+> 注意：自带英译中模型的镜像大小约 70MiB，启动后单 worker 大约占用内存 300MiB+，且翻译延迟较低。
 
 ### 方式二：使用预构建镜像（不含翻译模型）
 

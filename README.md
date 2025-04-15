@@ -35,7 +35,7 @@ While searching for similar projects, I found Mozilla's [translation-service](ht
 - **Translation Models**: [Firefox Translations Models](https://github.com/mozilla/firefox-translations-models/)
 - **Language Detection**: [Whichlang](https://github.com/quickwit-oss/whichlang)
 
-## Deployment (Docker Only)
+## Deployment
 
 Docker is the **only recommended** deployment method for this service.
 
@@ -60,7 +60,7 @@ docker run -d --name translation-service \
   docker.cnb.cool/aalivexy/translation-service:latest
 ```
 
-> Note: The English-Chinese model image is about 50MiB, and each worker uses approximately 300MiB+ of memory with low translation latency.
+> Note: The English-Chinese model image is about 70MiB, and each worker uses approximately 300MiB+ of memory with low translation latency.
 
 ### Docker Compose Deployment
 
