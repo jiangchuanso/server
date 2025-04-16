@@ -1,4 +1,6 @@
-# BergaRust - Translation Service
+# mtranservercore-rs
+
+## BergaRust - Translation Service
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/aalivexy/translation-service)
 [![Docker Image](https://img.shields.io/badge/Docker-Image-blue.svg)](https://github.com/aalivexy/translation-service/pkgs/container/translation-service)
