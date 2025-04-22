@@ -1,9 +1,9 @@
 services:
-  translation-service:
+  linguaspark:
     build:
       context: .
       dockerfile: Dockerfile
-    image: translation-service:latest
+    image: linguaspark:latest
     ports:
       - "3000:3000"
     volumes:

@@ -7,8 +7,8 @@ use axum::{
     response::{IntoResponse, Response},
     routing::{get, post},
 };
-use bergamot::Translator;
 use isolang::Language;
+use linguaspark::Translator;
 use std::{fs, io, net::SocketAddr, path::PathBuf, sync::Arc};
 use tokio::net::TcpListener;
 use tower_http::{
@@ -39,7 +39,7 @@ enum AppError {
     Unauthorized,
 
     #[error("Translator error: {0}")]
-    TranslatorError(#[from] bergamot::TranslatorError),
+    TranslatorError(#[from] linguaspark::TranslatorError),
 
     #[error("Configuration error: {0}")]
     ConfigError(String),
@@ -99,39 +99,6 @@ async fn auth_middleware(
     Ok(next.run(request).await)
 }
 
-fn build_config(
-    model_path: &str,
-    src_vocab_path: &str,
-    trg_vocab_path: &str,
-    shortlist_path: &str,
-) -> String {
-    format!(
-        r#"beam-size: 1
-normalize: 1.0
-word-penalty: 0
-max-length-break: 128
-mini-batch-words: 1024
-workspace: 128
-max-length-factor: 2.0
-skip-cost: True
-quiet: True
-quiet_translation: True
-gemm-precision: int8shiftAll
-
-models: [{}]
-vocabs: [{}, {}]
-shortlist: [{}, false]"#,
-        model_path, src_vocab_path, trg_vocab_path, shortlist_path
-    )
-}
-
-struct ModelFiles {
-    src_vocab_path: String,
-    trg_vocab_path: String,
-    model_path: String,
-    shortlist_path: String,
-}
-
 fn load_models_manually(
     translator: &Translator,
     models_dir: &PathBuf,
@@ -144,27 +111,7 @@ fn load_models_manually(
         let language_pair = entry.file_name().to_string_lossy().into_owned();
 
         info!("Looking for models in {}", model_dir_path.display());
-
-        let files = collect_model_files(&model_dir_path)?;
-
-        if files.model_path.is_empty()
-            || files.src_vocab_path.is_empty()
-            || files.trg_vocab_path.is_empty()
-            || files.shortlist_path.is_empty()
-        {
-            return Err(AppError::ConfigError(format!(
-                "Missing required model files for language pair '{}'",
-                language_pair
-            )));
-        }
-
-        let config = build_config(
-            &files.model_path,
-            &files.src_vocab_path,
-            &files.trg_vocab_path,
-            &files.shortlist_path,
-        );
-        translator.load_model_from_config(&language_pair, &config)?;
+        translator.load_model(&language_pair, model_dir_path)?;
 
         if language_pair.len() >= 4 {
             let from_lang = translation::parse_language_code(&language_pair[0..2])?;
@@ -181,40 +128,6 @@ fn load_models_manually(
     }
 
     Ok(models)
-}
-
-fn collect_model_files(base_path: &PathBuf) -> Result<ModelFiles, AppError> {
-    let mut files = ModelFiles {
-        src_vocab_path: String::new(),
-        trg_vocab_path: String::new(),
-        model_path: String::new(),
-        shortlist_path: String::new(),
-    };
-
-    for file_entry in fs::read_dir(base_path)? {
-        let file_entry = file_entry?;
-        let file_name = file_entry.file_name();
-        let file_name = file_name.to_string_lossy();
-        let path_str = file_entry.path().to_string_lossy().into_owned();
-
-        if file_name.ends_with(".spm") {
-            if file_name.starts_with("srcvocab") {
-                files.src_vocab_path = path_str;
-            } else if file_name.starts_with("trgvocab") {
-                files.trg_vocab_path = path_str;
-            } else {
-                files.src_vocab_path = path_str.clone();
-                files.trg_vocab_path = path_str;
-            }
-        } else if file_name.ends_with(".intgemm.alphas.bin") || file_name.ends_with(".intgemm8.bin")
-        {
-            files.model_path = path_str;
-        } else if file_name.ends_with(".s2t.bin") {
-            files.shortlist_path = path_str;
-        }
-    }
-
-    Ok(files)
 }
 
 #[tokio::main]

@@ -1,30 +1,19 @@
 FROM rust:bookworm AS builder
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor -o /usr/share/keyrings/oneapi-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" > /etc/apt/sources.list.d/oneAPI.list
-
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    liblapack-dev \
-    libblas-dev \
-    intel-oneapi-mkl \
-    intel-oneapi-mkl-devel
-
-ENV MKLROOT=/opt/intel/oneapi/mkl/latest
-
 WORKDIR /app
 COPY . .
 
-RUN cargo build -p server --release -vv
+RUN cargo build --release
+
+RUN mkdir -p /app/lib && \
+    find /app/target/release/build -name "linguaspark-*" -type d | xargs -I {} find {} -path "*/out/*.so" -type f | xargs -I {} cp {} /app/lib/ && \
+    ls -l /app/lib
 
 FROM debian:bookworm-slim
 
 WORKDIR /app
-COPY --from=builder /app/target/release/server /app/server
-COPY --from=builder /opt/intel/oneapi/compiler/latest/lib/libiomp5.so /usr/lib/x86_64-linux-gnu/libiomp5.so
+COPY --from=builder /app/target/release/linguaspark-server /app/linguaspark-server
+COPY --from=builder /app/lib/*.so /lib/x86_64-linux-gnu/
 
 ENV MODELS_DIR=/app/models
 ENV NUM_WORKERS=1
@@ -35,4 +24,4 @@ ENV RUST_LOG=info
 
 EXPOSE 3000
 
-ENTRYPOINT ["/app/server"]
+ENTRYPOINT ["/app/linguaspark-server"]

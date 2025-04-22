@@ -1,4 +1,4 @@
-FROM ghcr.io/aalivexy/translation-service:main
+FROM ghcr.io/linguaspark/server:main
 
 COPY ./models-enzh /app/models
 
@@ -11,4 +11,4 @@ ENV RUST_LOG=info
 
 EXPOSE 3000
 
-ENTRYPOINT ["/app/server"]
+ENTRYPOINT ["/app/linguaspark-server"]
