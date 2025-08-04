@@ -7,19 +7,19 @@ main:
         - name: download models
           script: |
             mkdir -p models-enzh/enzh
-            curl -sL https://github.com/mozilla/firefox-translations-models/raw/refs/heads/main/registry.json > registry.json
-            files=(model lex trgvocab srcvocab)
-            for file_type in "${files[@]}"; do
-              file_name=$(jq -r ".enzh.$file_type.name" registry.json)
-              if [ -n "$file_name" ] && [ "$file_name" != "null" ]; then
-                echo "Downloading $file_name for enzh"
-                download_url="https://github.com/mozilla/firefox-translations-models/raw/refs/heads/main/models/prod/enzh/${file_name}.gz"
-                curl -L -sL $download_url -o "models-enzh/enzh/${file_name}.gz"
-                gunzip -f "models-enzh/enzh/${file_name}.gz"
-                echo "$file_name downloaded and extracted to models-enzh/enzh/$file_name"
-              else
-                echo "Failed to find $file_type for enzh in registry.json"
-              fi
+            base_url="https://github.com/mozilla/firefox-translations-models/raw/refs/heads/main/models/base/enzh"
+            files=(
+              "lex.50.50.enzh.s2t.bin.gz"
+              "model.enzh.intgemm.alphas.bin.gz"
+              "srcvocab.enzh.spm.gz"
+              "trgvocab.enzh.spm.gz"
+            )
+            for file in "${files[@]}"; do
+              echo "Downloading $file"
+              curl -sL "$base_url/$file" -o "models-enzh/enzh/$file"
+              gunzip -f "models-enzh/enzh/$file"
+              extracted_file="${file%.gz}"
+              echo "$extracted_file downloaded and extracted"
             done
             echo "Download completed. Model structure:"
             pwd
