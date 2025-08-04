@@ -1,7 +1,7 @@
 # BergaRust - Translation Service
 
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/aalivexy/translation-service)
-[![Docker Image](https://img.shields.io/badge/Docker-Image-blue.svg)](https://github.com/aalivexy/translation-service/pkgs/container/translation-service)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/LinguaSpark/server)
+[![Docker Image](https://img.shields.io/badge/Docker-Image-blue.svg)](https://github.com/LinguaSpark/server/pkgs/container/translation-service)
 
 一个基于 Rust 和 Bergamot 翻译引擎的轻量级多语言翻译服务，兼容多种翻译前端 API。
 
@@ -44,7 +44,7 @@ Docker 是本服务**唯一推荐**的部署方式。
 ```bash
 docker run -d --name translation-service \
   -p 3000:3000 \
-  docker.cnb.cool/aalivexy/translation-service:latest
+  docker.cnb.cool/LinguaSpark/server:latest
 ```
 
 > 注意：自带英译中模型的镜像大小约 70MiB，启动后单 worker 大约占用内存 300MiB+，且翻译延迟较低。
@@ -59,7 +59,7 @@ mkdir -p models
 docker run -d --name translation-service \
   -p 3000:3000 \
   -v "$(pwd)/models:/app/models" \
-  ghcr.io/aalivexy/translation-service:main
+  ghcr.io/LinguaSpark/server:main
 ```
 
 ### Docker Compose 部署
@@ -69,7 +69,7 @@ docker run -d --name translation-service \
 ```yaml
 services:
   translation-service:
-    image: docker.cnb.cool/aalivexy/translation-service:latest
+    image: docker.cnb.cool/LinguaSpark/server:latest
     ports:
       - "3000:3000"
     environment:
@@ -93,7 +93,7 @@ docker compose up -d
 如果需要创建包含特定语言对的自定义镜像，可以使用以下 Dockerfile 模板：
 
 ```dockerfile
-FROM ghcr.io/aalivexy/translation-service:main
+FROM ghcr.io/LinguaSpark/server:main
 
 COPY ./your-models-directory /app/models
 
