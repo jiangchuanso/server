@@ -12,6 +12,10 @@ pub fn parse_language_code(code: &str) -> Result<Language, AppError> {
 }
 
 fn get_iso_code(lang: &Language) -> Result<&'static str, AppError> {
+    if lang.to_639_3() == "cmn" {
+        // whichlang uses "cmn" for Chinese, but we want to return "zh" for ISO 639-1
+        return Ok("zh");
+    }
     lang.to_639_1().ok_or_else(|| {
         AppError::TranslationError(format!(
             "Language '{}' doesn't have an ISO 639-1 code",
