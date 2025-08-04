@@ -274,7 +274,7 @@ POST /hcfy
 #### DeepLX API
 
 ```
-POST /translate
+POST /deeplx
 ```
 
 请求体：

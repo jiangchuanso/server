@@ -278,7 +278,7 @@ Response:
 #### DeepLX API
 
 ```
-POST /translate
+POST /deeplx
 ```
 
 Request body:
