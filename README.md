@@ -1,6 +1,4 @@
-# mtranservercore-rs
-
-## BergaRust - Translation Service
+# LinguaSpark - Translation Service
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/LinguaSpark/server)
 [![Docker Image](https://img.shields.io/badge/Docker-Image-blue.svg)](https://github.com/LinguaSpark/server/pkgs/container/translation-service)
@@ -59,7 +57,7 @@ docker run -d --name translation-service \
 ```bash
 docker run -d --name translation-service \
   -p 3000:3000 \
-  docker.cnb.cool/linguaspark/server:latest
+  docker.cnb.cool/aalivexy/translation-service:latest
 ```
 
 > Note: The English-Chinese model image is about 70MiB, and each worker uses approximately 300MiB+ of memory with low translation latency.
@@ -298,7 +296,8 @@ Response:
   "data": "你好世界",
   "alternatives": [],
   "source_lang": "EN",
-  "target_lang": "ZH"
+  "target_lang": "ZH",
+  "method": "Free"
 }
 ```
 

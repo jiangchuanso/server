@@ -1,4 +1,4 @@
-# BergaRust - Translation Service
+# LinguaSpark - Translation Service
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/LinguaSpark/server)
 [![Docker Image](https://img.shields.io/badge/Docker-Image-blue.svg)](https://github.com/LinguaSpark/server/pkgs/container/translation-service)
@@ -44,7 +44,7 @@ Docker 是本服务**唯一推荐**的部署方式。
 ```bash
 docker run -d --name translation-service \
   -p 3000:3000 \
-  docker.cnb.cool/linguaspark/server:latest
+  docker.cnb.cool/aalivexy/translation-service:latest
 ```
 
 > 注意：自带英译中模型的镜像大小约 70MiB，启动后单 worker 大约占用内存 300MiB+，且翻译延迟较低。
@@ -69,7 +69,7 @@ docker run -d --name translation-service \
 ```yaml
 services:
   translation-service:
-    image: docker.cnb.cool/linguaspark/server:latest
+    image: docker.cnb.cool/aalivexy/translation-service:latest
     ports:
       - "3000:3000"
     environment:
@@ -134,7 +134,7 @@ models/
 
 | 变量名 | 描述 | 默认值 |
 |--------|------|--------|
-| `MODELS_DIR` | 模型目录路径 | `./models` |
+| `MODELS_DIR` | 模型目录路径 | `/app/models` |
 | `NUM_WORKERS` | 翻译工作线程数 | `1` |
 | `IP` | 服务监听的 IP 地址 | `127.0.0.1` |
 | `PORT` | 服务监听的端口 | `3000` |
@@ -290,8 +290,12 @@ POST /deeplx
 ```json
 {
   "code": 200,
+  "id": 1744646400,
   "data": "你好世界",
-  "alternatives": []
+  "alternatives": [],
+  "source_lang": "EN",
+  "target_lang": "ZH",
+  "method": "Free"
 }
 ```
 
